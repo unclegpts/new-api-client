@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:window_manager/window_manager.dart';
 import 'router.dart';
 import 'core/theme/app_theme.dart';
@@ -43,16 +45,23 @@ class MyApp extends ConsumerStatefulWidget {
 }
 
 class _MyAppState extends ConsumerState<MyApp> with WindowListener {
-  final Locale _locale = const Locale('zh');
+  static const _locale = Locale('zh', 'CN');
+  late final ValueNotifier<AuthState> _authNotifier;
+  late final GoRouter _router;
 
   @override
   void initState() {
     super.initState();
     windowManager.addListener(this);
+
+    // 监听认证状态变化 → GoRouter 自动重评估 redirect
+    _authNotifier = ValueNotifier(const AuthState());
+    _router = createRouter(refreshListenable: _authNotifier);
   }
 
   @override
   void dispose() {
+    _authNotifier.dispose();
     windowManager.removeListener(this);
     super.dispose();
   }
@@ -60,14 +69,17 @@ class _MyAppState extends ConsumerState<MyApp> with WindowListener {
   @override
   void onWindowClose() async {
     await windowManager.hide();
-    // Prevent close — minimize to tray instead on supported platforms
   }
 
   @override
   Widget build(BuildContext context) {
     final themeMode = ref.watch(themeProvider);
     final authState = ref.watch(authProvider);
-    final router = createRouter(authState: authState);
+
+    // 同步认证状态到 GoRouter 的 refreshListenable
+    if (_authNotifier.value != authState) {
+      _authNotifier.value = authState;
+    }
 
     return MaterialApp.router(
       title: 'New API Client',
@@ -76,13 +88,13 @@ class _MyAppState extends ConsumerState<MyApp> with WindowListener {
       darkTheme: AppTheme.dark(),
       themeMode: themeMode,
       locale: _locale,
-      supportedLocales: const [Locale('zh'), Locale('en')],
+      supportedLocales: const [Locale('zh', 'CN'), Locale('en')],
       localizationsDelegates: const [
         AppLocalizations.delegate,
-        DefaultMaterialLocalizations.delegate,
-        DefaultWidgetsLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
       ],
-      routerConfig: router,
+      routerConfig: _router,
     );
   }
 }

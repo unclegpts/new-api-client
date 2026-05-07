@@ -188,20 +188,23 @@ class _ExampleChip extends StatelessWidget {
           page?._useUrl(url);
         },
         borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-          child: Row(
-            children: [
-              Icon(Icons.play_arrow, size: 14,
-                  color: Theme.of(context).colorScheme.primary),
-              const SizedBox(width: 6),
-              Text(url,
-                  style: TextStyle(
-                      fontFamily: 'monospace',
-                      fontSize: 12,
-                      color: Theme.of(context).colorScheme.primary)),
-              const SizedBox(width: 8),
-              Text(label,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            child: Row(
+              children: [
+                Icon(Icons.play_arrow, size: 14,
+                    color: Theme.of(context).colorScheme.primary),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(url,
+                      style: TextStyle(
+                          fontFamily: 'monospace',
+                          fontSize: 12,
+                          color: Theme.of(context).colorScheme.primary),
+                      overflow: TextOverflow.ellipsis),
+                ),
+                const SizedBox(width: 8),
+                Text(label,
                   style: TextStyle(
                       fontSize: 11,
                       color: Theme.of(context).colorScheme.onSurfaceVariant)),

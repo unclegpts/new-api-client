@@ -43,10 +43,18 @@ class _PlaceholderPage extends StatelessWidget {
       );
 }
 
-GoRouter createRouter({required AuthState authState}) {
+GoRouter createRouter({required Listenable refreshListenable}) {
   return GoRouter(
     initialLocation: '/',
+    refreshListenable: refreshListenable,
     redirect: (context, state) {
+      // 从 refreshListenable 读取认证状态（可能是 ValueNotifier<AuthState>）
+      final listenable = refreshListenable;
+      AuthState authState = const AuthState();
+      if (listenable is ValueNotifier<AuthState>) {
+        authState = listenable.value;
+      }
+
       final isLoggedIn = authState.isLoggedIn;
       final isAdmin = authState.isAdmin;
       final loc = state.matchedLocation;
