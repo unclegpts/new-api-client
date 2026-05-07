@@ -22,8 +22,8 @@ class _SetupPageState extends State<SetupPage> {
 
   Future<void> _loadExisting() async {
     final url = await _client.getServerUrl();
-    if (url != null) {
-      _urlController.text = url;
+    if (url != null && mounted) {
+      setState(() => _urlController.text = url);
     }
   }
 
@@ -41,7 +41,6 @@ class _SetupPageState extends State<SetupPage> {
 
     try {
       await _client.configure(baseUrl: url);
-      // Test connection
       final response = await _client.dio.get('/api/status');
       if (response.data['success'] == true) {
         await _client.setServerUrl(url);
@@ -67,53 +66,59 @@ class _SetupPageState extends State<SetupPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final color = theme.colorScheme;
 
     return Scaffold(
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 420),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.cloud, size: 64, color: theme.colorScheme.primary),
-                const SizedBox(height: 16),
-                Text('连接到 New API 服务器',
-                    style: theme.textTheme.headlineSmall),
-                const SizedBox(height: 8),
-                Text('请输入你的 new-api 实例地址',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant)),
-                const SizedBox(height: 32),
-                TextField(
-                  controller: _urlController,
-                  decoration: InputDecoration(
-                    labelText: '服务器地址',
-                    hintText: 'https://your-server.com',
-                    prefixIcon: const Icon(Icons.link),
-                    border: const OutlineInputBorder(),
-                    errorText: _error,
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Icon(Icons.cloud, size: 64, color: color.primary),
+                  const SizedBox(height: 16),
+                  Text('连接到 New API 服务器',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.headlineSmall),
+                  const SizedBox(height: 8),
+                  Text('请输入你的 new-api 实例地址',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodyMedium
+                          ?.copyWith(color: color.onSurfaceVariant)),
+                  const SizedBox(height: 32),
+                  TextField(
+                    controller: _urlController,
+                    decoration: InputDecoration(
+                      labelText: '服务器地址',
+                      hintText: 'https://your-server.com',
+                      prefixIcon: const Icon(Icons.link),
+                      border: const OutlineInputBorder(),
+                      errorText: _error,
+                    ),
+                    keyboardType: TextInputType.url,
+                    onSubmitted: (_) => _connect(),
                   ),
-                  keyboardType: TextInputType.url,
-                  onSubmitted: (_) => _connect(),
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: FilledButton(
-                    onPressed: _loading ? null : _connect,
-                    child: _loading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Text('连接'),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    height: 48,
+                    child: FilledButton(
+                      onPressed: _loading ? null : _connect,
+                      child: _loading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2),
+                            )
+                          : const Text('连接'),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
