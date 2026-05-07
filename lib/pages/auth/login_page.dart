@@ -20,11 +20,21 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   Map<String, dynamic>? _oauthProviders;
   bool _loadingProviders = true;
   bool _showPassword = false;
+  bool _hasServerConfigured = false;
 
   @override
   void initState() {
     super.initState();
-    _loadOAuthProviders();
+    _checkServer();
+  }
+
+  Future<void> _checkServer() async {
+    final url = await _client.getServerUrl();
+    if (!mounted) return;
+    setState(() => _hasServerConfigured = url != null && url.isNotEmpty);
+    if (_hasServerConfigured) {
+      _loadOAuthProviders();
+    }
   }
 
   Future<void> _loadOAuthProviders() async {
@@ -58,7 +68,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     } else if (result == false) {
       setState(() { _loading = false; _error = '登录失败，请检查用户名和密码'; });
     } else {
-      // null — 可能需要 2FA（后续支持）
       setState(() { _loading = false; _error = '登录失败，请检查用户名和密码'; });
     }
   }
@@ -82,6 +91,35 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final color = theme.colorScheme;
+
+    // 未配置服务器 — 显示配置引导
+    if (!_hasServerConfigured) {
+      return Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.cloud_off, size: 64, color: color.error),
+                const SizedBox(height: 16),
+                Text('未配置服务器', style: theme.textTheme.headlineSmall),
+                const SizedBox(height: 8),
+                Text('请先配置 new-api 服务器地址后再登录',
+                    style: theme.textTheme.bodyMedium?.copyWith(color: color.onSurfaceVariant),
+                    textAlign: TextAlign.center),
+                const SizedBox(height: 24),
+                FilledButton.icon(
+                  icon: const Icon(Icons.settings),
+                  label: const Text('配置服务器'),
+                  onPressed: () => context.go('/setup'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       body: Center(
@@ -122,7 +160,18 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 ),
                 if (_error != null) ...[
                   const SizedBox(height: 8),
-                  Text(_error!, style: TextStyle(color: color.error, fontSize: 13)),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: color.errorContainer,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(children: [
+                      Icon(Icons.error_outline, size: 16, color: color.error),
+                      const SizedBox(width: 8),
+                      Expanded(child: Text(_error!, style: TextStyle(color: color.error, fontSize: 13))),
+                    ]),
+                  ),
                 ],
                 const SizedBox(height: 16),
                 SizedBox(
@@ -212,7 +261,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   }
 
   void _oauthLogin(String provider, dynamic config) {
-    // TODO: WebView OAuth flow (Phase 3)
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('$provider OAuth 将在后续版本支持')),
     );

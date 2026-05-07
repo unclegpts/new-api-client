@@ -3,12 +3,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:window_manager/window_manager.dart';
 import 'router.dart';
 import 'core/theme/app_theme.dart';
+import 'core/api/api_client.dart';
 import 'providers/theme_provider.dart';
 import 'providers/auth_provider.dart';
 import 'l10n/app_localizations.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // 恢复已保存的服务器地址
+  final apiClient = ApiClient();
+  final savedUrl = await apiClient.getServerUrl();
+  if (savedUrl != null && savedUrl.isNotEmpty) {
+    await apiClient.configure(baseUrl: savedUrl);
+  }
 
   // 桌面窗口管理
   await windowManager.ensureInitialized();
