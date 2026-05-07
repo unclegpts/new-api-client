@@ -65,8 +65,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     if (!mounted) return;
     if (result == true) {
       context.go('/console');
-    } else if (result == false) {
-      setState(() { _loading = false; _error = '登录失败，请检查用户名和密码'; });
+    } else if (result == null) {
+      // 需要 2FA
+      setState(() { _loading = false; _error = '此账号需要 2FA 验证，请在 Web 端登录后关闭 2FA'; });
     } else {
       setState(() { _loading = false; _error = '登录失败，请检查用户名和密码'; });
     }

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/api/api_client.dart';
 
@@ -43,26 +44,58 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> _checkSavedAuth() async {
     final token = await _apiClient.token;
     if (token != null) {
+      // 有 token = 之前登录过（session cookie 不一定持久化，但用 token 标记状态）
       state = state.copyWith(isLoggedIn: true, isLoading: false);
     } else {
       state = state.copyWith(isLoading: false);
     }
   }
 
-  Future<bool> login(String username, String password) async {
+  /// 登录：使用 session cookie 认证
+  /// 返回 true=成功, false=失败, null=需要2FA
+  Future<bool?> login(String username, String password) async {
     try {
-      final response = await _apiClient.dio.post('/api/user/login', data: {
+      // Step 1: 账号密码登录，获取 session cookie
+      final loginResp = await _apiClient.dio.post('/api/user/login', data: {
         'username': username,
         'password': password,
       });
-      if (response.data['success'] == true) {
-        final token = response.data['data'] as String;
-        await _apiClient.setAuth(token: token, userId: username);
-        state = AuthState(isLoggedIn: true, username: username);
-        return true;
+
+      if (loginResp.data['success'] != true) {
+        return false;
       }
-      return false;
+
+      final data = loginResp.data['data'];
+      if (data == null) {
+        return false;
+      }
+
+      // 检查是否需要 2FA
+      if (data is Map && data['require_2fa'] == true) {
+        return null; // 需要 2FA
+      }
+
+      // Step 2: 用 session cookie 获取 access token（供 API 场景用）
+      try {
+        final tokenResp = await _apiClient.dio.get('/api/user/self/token');
+        if (tokenResp.data['success'] == true) {
+          final token = tokenResp.data['data'] as String;
+          await _apiClient.setAuth(token: token, userId: username);
+        }
+      } catch (_) {
+        // token 获取失败不影响登录，session cookie 已可用
+      }
+
+      final isAdmin = (data['role'] ?? 0) >= 10;
+      state = AuthState(
+        isLoggedIn: true,
+        isAdmin: isAdmin,
+        username: data['username']?.toString(),
+        role: data['role'] ?? 0,
+      );
+      return true;
     } catch (e) {
+      debugPrint('Login error: $e');
       return false;
     }
   }
@@ -72,6 +105,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       await _apiClient.dio.get('/api/user/logout');
     } catch (_) {}
     await _apiClient.clearAuth();
+    await _apiClient.clearCookies();
     state = const AuthState();
   }
 

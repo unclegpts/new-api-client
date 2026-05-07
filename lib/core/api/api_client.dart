@@ -1,21 +1,32 @@
+import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio/dio.dart';
+import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class ApiClient {
   late final Dio dio;
+  late final PersistCookieJar _cookieJar;
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
   String? _baseUrl;
 
   static final ApiClient _instance = ApiClient._();
   factory ApiClient() => _instance;
+
   ApiClient._() {
+    _cookieJar = PersistCookieJar(
+      storage: FileStorage('/tmp/new-api-cookies'),
+      ignoreExpires: false,
+    );
     dio = Dio(BaseOptions(
       connectTimeout: const Duration(seconds: 15),
       receiveTimeout: const Duration(seconds: 30),
       headers: {'Cache-Control': 'no-store'},
     ));
-    dio.interceptors.add(_AuthInterceptor(this));
-    dio.interceptors.add(LogInterceptor(requestBody: false, responseBody: false));
+    dio.interceptors.addAll([
+      CookieManager(_cookieJar),
+      _AuthInterceptor(this),
+      LogInterceptor(requestBody: false, responseBody: false),
+    ]);
   }
 
   Future<void> configure({required String baseUrl}) async {
@@ -45,6 +56,11 @@ class ApiClient {
   Future<void> setServerUrl(String url) async {
     await _secureStorage.write(key: 'server_url', value: url);
   }
+
+  /// 清除 session cookies（登出用）
+  Future<void> clearCookies() async {
+    await _cookieJar.deleteAll();
+  }
 }
 
 class _AuthInterceptor extends Interceptor {
@@ -53,13 +69,11 @@ class _AuthInterceptor extends Interceptor {
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
+    // Session cookie 由 CookieManager 自动处理。
+    // 如果保存了 access token，也加到请求头（供 API relay 等场景用）。
     final token = await client.token;
     if (token != null) {
       options.headers['Authorization'] = 'Bearer $token';
-    }
-    final userId = await client.userId;
-    if (userId != null) {
-      options.headers['New-API-User'] = userId;
     }
     handler.next(options);
   }

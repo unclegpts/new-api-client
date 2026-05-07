@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/api/api_client.dart';
 
 class SetupPage extends StatefulWidget {
@@ -45,7 +46,7 @@ class _SetupPageState extends State<SetupPage> {
       final response = await _client.dio.get('/api/status');
       if (response.data['success'] == true) {
         await _client.setServerUrl(url);
-        if (mounted) Navigator.of(context).pushReplacementNamed('/login');
+        if (mounted) context.go('/login');
       } else {
         setState(() => _error = '服务器返回错误');
       }
