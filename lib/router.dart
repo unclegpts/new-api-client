@@ -27,6 +27,8 @@ import 'pages/admin/user/user_list_page.dart';
 import 'pages/admin/redemption/redemption_page.dart';
 import 'pages/admin/subscription/subscription_page.dart';
 import 'pages/admin/settings/settings_page.dart';
+import 'pages/chat2link/chat2link_page.dart';
+import 'pages/static/static_pages.dart';
 
 class _PlaceholderPage extends StatelessWidget {
   final String title;
@@ -66,9 +68,10 @@ GoRouter createRouter({required AuthState authState}) {
       GoRoute(path: '/setup', builder: (_, __) => const SetupPage()),
       GoRoute(path: '/pricing', builder: (_, __) => const PricingPage()),
       GoRoute(path: '/about', builder: (_, __) => const AboutPage()),
-      GoRoute(path: '/user-agreement', builder: (_, __) => const _PlaceholderPage('用户协议')),
-      GoRoute(path: '/privacy-policy', builder: (_, __) => const _PlaceholderPage('隐私政策')),
-      GoRoute(path: '/forbidden', builder: (_, __) => const _PlaceholderPage('403 禁止访问')),
+      GoRoute(path: '/user-agreement', builder: (_, __) => const UserAgreementPage()),
+      GoRoute(path: '/privacy-policy', builder: (_, __) => const PrivacyPolicyPage()),
+      GoRoute(path: '/forbidden', builder: (_, __) => const ForbiddenPage()),
+      GoRoute(path: '/chat2link', builder: (_, __) => const Chat2LinkPage()),
       GoRoute(path: '/oauth/:provider', builder: (_, state) => _PlaceholderPage('OAuth: ${state.pathParameters['provider']}')),
       GoRoute(path: '/user/reset', builder: (_, __) => const _PlaceholderPage('重置密码确认')),
 
@@ -96,6 +99,8 @@ GoRouter createRouter({required AuthState authState}) {
           GoRoute(path: '/console/setting', builder: (_, __) => const SettingsPage()),
         ],
       ),
+      // 404 catch-all
+      GoRoute(path: '/:any', builder: (_, __) => const NotFoundPage()),
     ],
   );
 }
