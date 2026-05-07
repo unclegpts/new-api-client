@@ -51,13 +51,24 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       return;
     }
     setState(() { _loading = true; _error = null; });
-    final success = await ref.read(authProvider.notifier).login(username, password);
+    final result = await ref.read(authProvider.notifier).login(username, password);
     if (!mounted) return;
-    if (success) {
+    if (result == true) {
       context.go('/console');
+    } else if (result == false) {
+      setState(() { _loading = false; _error = '登录失败，请检查用户名和密码'; });
     } else {
+      // null — 可能需要 2FA（后续支持）
       setState(() { _loading = false; _error = '登录失败，请检查用户名和密码'; });
     }
+  }
+
+  void _passkeyLogin() {
+    showDialog(context: context, builder: (_) => AlertDialog(
+      title: const Text('Passkey 登录'),
+      content: const Text('Passkey (WebAuthn) 登录需要浏览器支持。\n在移动端使用生物识别，桌面端使用安全密钥。\n\nFeature coming soon.'),
+      actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('关闭'))],
+    ));
   }
 
   @override
@@ -123,6 +134,12 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                         ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                         : const Text('登 录'),
                   ),
+                ),
+                const SizedBox(height: 8),
+                TextButton.icon(
+                  icon: const Icon(Icons.fingerprint, size: 18),
+                  label: const Text('Passkey 登录'),
+                  onPressed: _passkeyLogin,
                 ),
 
                 const SizedBox(height: 12),

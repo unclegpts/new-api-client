@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 
 class HeaderBar extends StatelessWidget {
   final VoidCallback? onThemeToggle;
+  final VoidCallback? onSearch;
   final bool isDark;
 
-  const HeaderBar({super.key, this.onThemeToggle, this.isDark = false});
+  const HeaderBar({super.key, this.onThemeToggle, this.onSearch, this.isDark = false});
 
   @override
   Widget build(BuildContext context) {
@@ -24,6 +25,7 @@ class HeaderBar extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   )),
           const Spacer(),
+          IconButton(icon: const Icon(Icons.search), onPressed: onSearch, tooltip: '搜索'),
           IconButton(
             icon: Icon(isDark ? Icons.light_mode : Icons.dark_mode),
             onPressed: onThemeToggle,
